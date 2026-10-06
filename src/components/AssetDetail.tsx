@@ -104,7 +104,7 @@ export default function AssetDetail({
             <span className="file-meta">
               {f.width && f.height ? `${f.width} × ${f.height}` : ""} {formatBytes(f.size)}
             </span>
-            <a href={downloadUrl(f, f.name)} download className="file-download" aria-label={`Download ${f.name}`}>
+            <a href={downloadUrl(f)} download className="file-download" aria-label={`Download ${f.name}`}>
               <DownloadIcon />
             </a>
           </li>
@@ -113,7 +113,7 @@ export default function AssetDetail({
           <li>
             <span className="file-name" title={asset.archive.name}>{asset.archive.name}</span>
             <span className="file-meta">{formatBytes(asset.archive.size)}</span>
-            <a href={downloadUrl(asset.archive, asset.archive.name)} download className="file-download" aria-label={`Download ${asset.archive.name}`}>
+            <a href={downloadUrl(asset.archive)} download className="file-download" aria-label={`Download ${asset.archive.name}`}>
               <DownloadIcon />
             </a>
           </li>

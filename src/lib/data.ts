@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { attachCdn, blobConfigured } from "./blob";
 import { buildLibrary, signLibrary } from "./library";
 import { signId } from "./sign";
 import { driveConfigured, readDriveTree } from "./sources/drive";
@@ -15,7 +16,8 @@ export function activeSource(): Library["source"] {
   return "none";
 }
 
-async function loadLibrary(): Promise<Library> {
+/** Reads the library straight from the source, bypassing the cache (used by the sync job). */
+export async function loadLibrary(): Promise<Library> {
   const source = activeSource();
   if (source === "none") {
     return {
@@ -27,7 +29,16 @@ async function loadLibrary(): Promise<Library> {
     };
   }
   const tree = source === "drive" ? await readDriveTree() : await readLocalTree();
-  return signLibrary(buildLibrary(tree, source), signId);
+  const library = signLibrary(buildLibrary(tree, source), signId);
+  if (source === "drive" && blobConfigured()) {
+    try {
+      await attachCdn(library);
+    } catch (err) {
+      // Blob trouble shouldn't take the site down; files fall back to the API routes.
+      console.error("Could not read Vercel Blob; serving from Drive", err);
+    }
+  }
+  return library;
 }
 
 /**

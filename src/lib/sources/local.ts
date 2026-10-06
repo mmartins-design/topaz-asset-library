@@ -73,6 +73,7 @@ async function readFolder(dir: string): Promise<TreeFolder> {
       mimeType,
       size: s.size,
       createdTime: s.birthtime.toISOString(),
+      version: String(Math.round(s.mtimeMs)),
     };
     if (mimeType.startsWith("image/")) {
       try {

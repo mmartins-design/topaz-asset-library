@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@googleapis/drive": "^26.0.2",
+    "@vercel/blob": "^2.8.1",
     "framer-motion": "^14.0.0",
     "google-auth-library": "^11.1.0",
     "image-size": "^2.0.4",

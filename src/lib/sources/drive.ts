@@ -5,7 +5,7 @@ import type { TreeFile, TreeFolder } from "../types";
 const API = "https://www.googleapis.com/drive/v3";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const FILE_FIELDS =
-  "id,name,mimeType,parents,createdTime,size,imageMediaMetadata(width,height,rotation),videoMediaMetadata(width,height)";
+  "id,name,mimeType,parents,createdTime,modifiedTime,md5Checksum,size,imageMediaMetadata(width,height,rotation),videoMediaMetadata(width,height)";
 
 let auth: GoogleAuth | null = null;
 
@@ -45,6 +45,8 @@ interface DriveFile {
   mimeType: string;
   parents?: string[];
   createdTime: string;
+  modifiedTime?: string;
+  md5Checksum?: string;
   size?: string;
   imageMediaMetadata?: { width?: number; height?: number; rotation?: number };
   videoMediaMetadata?: { width?: number; height?: number };
@@ -102,6 +104,7 @@ function toTreeFile(f: DriveFile): TreeFile {
     height: rotated ? meta?.width : meta?.height,
     size: f.size ? Number(f.size) : undefined,
     createdTime: f.createdTime,
+    version: f.md5Checksum ?? f.modifiedTime,
   };
 }
 

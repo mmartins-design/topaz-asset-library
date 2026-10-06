@@ -1,10 +1,24 @@
 export type MediaKind = "image" | "video";
 
+export interface CdnUrls {
+  /** The original file. */
+  src?: string;
+  /** Pre-sized previews. */
+  w800?: string;
+  w2000?: string;
+}
+
 /** A single image or video file. */
 export interface MediaFile {
   id: string;
   /** Signature that authorizes /api/media and /api/thumb to serve this file. */
   sig?: string;
+  /** Changes whenever the file's content changes (Drive md5 / modified time). */
+  version?: string;
+  /** Friendly file name for downloads, e.g. "giraffe-with-blue-sky-after.jpeg". */
+  downloadName?: string;
+  /** Copies on the Vercel Blob CDN, when the sync job has uploaded them. */
+  cdn?: CdnUrls;
   name: string;
   kind: MediaKind;
   mimeType: string;
@@ -38,8 +52,18 @@ export interface Asset {
   /** Every media file in the set, cover first. */
   files: MediaFile[];
   /** A .zip download package found in the set folder. */
-  archive?: { id: string; sig?: string; name: string; size?: number };
+  archive?: Archive;
   createdTime: string;
+}
+
+export interface Archive {
+  id: string;
+  sig?: string;
+  name: string;
+  size?: number;
+  version?: string;
+  downloadName?: string;
+  cdn?: CdnUrls;
 }
 
 export interface Library {
@@ -59,6 +83,7 @@ export interface TreeFile {
   height?: number;
   size?: number;
   createdTime: string;
+  version?: string;
 }
 
 export interface TreeFolder {

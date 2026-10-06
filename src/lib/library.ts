@@ -77,7 +77,16 @@ const isHidden = (name: string) => name.startsWith(".");
 function toMedia(f: TreeFile): MediaFile | null {
   const kind = mediaKind(f.mimeType);
   if (!kind) return null;
-  return { id: f.id, name: f.name, kind, mimeType: f.mimeType, width: f.width, height: f.height, size: f.size };
+  return {
+    id: f.id,
+    name: f.name,
+    kind,
+    mimeType: f.mimeType,
+    width: f.width,
+    height: f.height,
+    size: f.size,
+    version: f.version,
+  };
 }
 
 /** "01-yellow-bird-on-a-branch" → "Yellow bird on a branch" */
@@ -192,7 +201,9 @@ function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | nu
     before,
     after,
     files,
-    archive: archiveFile ? { id: archiveFile.id, name: archiveFile.name, size: archiveFile.size } : undefined,
+    archive: archiveFile
+      ? { id: archiveFile.id, name: archiveFile.name, size: archiveFile.size, version: archiveFile.version }
+      : undefined,
     createdTime: isoDate(meta?.["Created On"], folder.createdTime),
   };
 }
@@ -277,6 +288,13 @@ export function buildLibrary(root: TreeFolder, source: Library["source"]): Libra
     walk(modelFolder, modelFolder.name, [], true, assets);
   }
   assignSlugs(assets);
+  for (const a of assets) {
+    for (const f of [...a.files, a.poster, a.archive]) {
+      if (!f) continue;
+      const ext = /\.[^.]+$/.exec(f.name)?.[0].toLowerCase() ?? "";
+      f.downloadName = `${a.slug}-${slugify(stem(f.name)) || "file"}${ext}`;
+    }
+  }
   assets.sort((a, b) => b.createdTime.localeCompare(a.createdTime));
   const models = [...new Set(assets.flatMap((a) => a.models))].sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true }),
