@@ -15,8 +15,23 @@ import type { Archive, Library, MediaFile } from "./types";
 
 export const PREVIEW_WIDTHS = [800, 2000] as const;
 
+/**
+ * The store's read-write token. Vercel names it BLOB_READ_WRITE_TOKEN by default, but the
+ * "Connect store" dialog allows a custom prefix (e.g. STORAGE_READ_WRITE_TOKEN), so look for any of them.
+ */
+function blobToken(): string | undefined {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  const key = Object.keys(process.env).find(
+    (k) => k.endsWith("READ_WRITE_TOKEN") && process.env[k]?.startsWith("vercel_blob_rw_"),
+  );
+  return key ? process.env[key] : undefined;
+}
+
+/** Explicit token when we have one; otherwise the SDK uses BLOB_STORE_ID + Vercel OIDC. */
+const auth = () => (blobToken() ? { token: blobToken() } : {});
+
 export function blobConfigured() {
-  return !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+  return !!(blobToken() || process.env.BLOB_STORE_ID);
 }
 
 type Servable = MediaFile | Archive;
@@ -39,7 +54,7 @@ async function listAll(): Promise<Map<string, string>> {
   const urls = new Map<string, string>();
   let cursor: string | undefined;
   do {
-    const page = await list({ cursor, limit: 1000 });
+    const page = await list({ cursor, limit: 1000, ...auth() });
     for (const b of page.blobs) urls.set(b.pathname, b.url);
     cursor = page.hasMore ? page.cursor : undefined;
   } while (cursor);
@@ -105,6 +120,7 @@ export async function syncToBlob(lib: Library, budgetMs = 240_000): Promise<Sync
       job.type === "file" ? await fetchDriveMedia(job.file.id, null) : await fetchDriveThumb(job.file.id, job.width);
     if (!res?.ok || !res.body) throw new Error(res ? `Drive ${res.status}` : "No Drive thumbnail");
     await put(job.pathname, res.body, {
+      ...auth(),
       access: "public",
       addRandomSuffix: false,
       allowOverwrite: true,
@@ -134,7 +150,7 @@ export async function syncToBlob(lib: Library, budgetMs = 240_000): Promise<Sync
     const stale = [...existing.entries()]
       .filter(([pathname]) => /^(files|previews)\//.test(pathname) && !wanted.has(pathname))
       .map(([, url]) => url);
-    for (let i = 0; i < stale.length; i += 100) await del(stale.slice(i, i + 100));
+    for (let i = 0; i < stale.length; i += 100) await del(stale.slice(i, i + 100), auth());
     deleted = stale.length;
   }
 
