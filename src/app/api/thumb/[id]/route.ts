@@ -1,4 +1,5 @@
-import { activeSource, isServable } from "@/lib/data";
+import { activeSource } from "@/lib/data";
+import { verifyId } from "@/lib/sign";
 import { fetchDriveMedia, fetchDriveThumb } from "@/lib/sources/drive";
 import { localMediaResponse } from "@/lib/sources/local";
 
@@ -8,9 +9,11 @@ const CACHE = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=25
 /** Resized preview image (?w=400|800|1200|2000). Videos get a still frame. */
 export async function GET(req: Request, ctx: RouteContext<"/api/thumb/[id]">) {
   const { id } = await ctx.params;
-  if (!(await isServable(id))) return new Response("Not found", { status: 404 });
 
-  const requested = Number(new URL(req.url).searchParams.get("w")) || 800;
+  const params = new URL(req.url).searchParams;
+  if (!verifyId(id, params.get("s"))) return new Response("Not found", { status: 404 });
+
+  const requested = Number(params.get("w")) || 800;
   const width = WIDTHS.find((w) => w >= requested) ?? WIDTHS.at(-1)!;
 
   // Local dev: no resizing, just serve the original.

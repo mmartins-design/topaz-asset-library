@@ -53,8 +53,8 @@ export default function CompareSlider({
     isVideo ? (
       <video
         ref={ref}
-        src={mediaUrl(f.id)}
-        poster={poster ? thumbUrl(poster.id, 2000) : undefined}
+        src={mediaUrl(f)}
+        poster={poster ? thumbUrl(poster, 2000) : undefined}
         autoPlay={isAfter}
         muted
         loop
@@ -62,7 +62,7 @@ export default function CompareSlider({
         draggable={false}
       />
     ) : (
-      <img src={thumbUrl(f.id, 2000)} alt={isAfter ? "After" : "Before"} draggable={false} />
+      <img src={thumbUrl(f, 2000)} alt={isAfter ? "After" : "Before"} draggable={false} />
     );
 
   return (

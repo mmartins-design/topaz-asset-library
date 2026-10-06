@@ -232,13 +232,18 @@ export function buildLibrary(root: TreeFolder, source: Library["source"]): Libra
   return { assets, models, source, updatedAt: new Date().toISOString() };
 }
 
-/** Every file id the site may serve, used to keep the media routes from proxying arbitrary files. */
-export function servableIds(lib: Library): Set<string> {
-  const ids = new Set<string>();
+/** Attaches a URL signature to every servable file (see lib/sign.ts). */
+export function signLibrary(lib: Library, sign: (id: string) => string): Library {
+  const seen = new Set<object>();
+  const signFile = <T extends { id: string; sig?: string }>(f: T | undefined) => {
+    if (f && !seen.has(f)) {
+      seen.add(f);
+      f.sig = sign(f.id);
+    }
+  };
   for (const a of lib.assets) {
-    for (const f of a.files) ids.add(f.id);
-    if (a.poster) ids.add(a.poster.id);
-    if (a.archive) ids.add(a.archive.id);
+    a.files.forEach(signFile);
+    [a.cover, a.poster, a.before, a.after, a.archive].forEach(signFile);
   }
-  return ids;
+  return lib;
 }

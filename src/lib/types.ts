@@ -3,6 +3,8 @@ export type MediaKind = "image" | "video";
 /** A single image or video file. */
 export interface MediaFile {
   id: string;
+  /** Signature that authorizes /api/media and /api/thumb to serve this file. */
+  sig?: string;
   name: string;
   kind: MediaKind;
   mimeType: string;
@@ -32,7 +34,7 @@ export interface Asset {
   /** Every media file in the set, cover first. */
   files: MediaFile[];
   /** A .zip download package found in the set folder. */
-  archive?: { id: string; name: string; size?: number };
+  archive?: { id: string; sig?: string; name: string; size?: number };
   createdTime: string;
 }
 

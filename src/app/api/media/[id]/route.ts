@@ -1,4 +1,5 @@
-import { activeSource, isServable } from "@/lib/data";
+import { activeSource } from "@/lib/data";
+import { verifyId } from "@/lib/sign";
 import { fetchDriveMedia } from "@/lib/sources/drive";
 import { localMediaResponse } from "@/lib/sources/local";
 
@@ -8,9 +9,9 @@ import { localMediaResponse } from "@/lib/sources/local";
  */
 export async function GET(req: Request, ctx: RouteContext<"/api/media/[id]">) {
   const { id } = await ctx.params;
-  if (!(await isServable(id))) return new Response("Not found", { status: 404 });
 
   const url = new URL(req.url);
+  if (!verifyId(id, url.searchParams.get("s"))) return new Response("Not found", { status: 404 });
   const download = url.searchParams.get("download");
   const range = req.headers.get("range");
   const extra: Record<string, string> = {

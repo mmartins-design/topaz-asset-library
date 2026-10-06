@@ -1,6 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { buildLibrary, servableIds } from "./library";
+import { buildLibrary, signLibrary } from "./library";
+import { signId } from "./sign";
 import { driveConfigured, readDriveTree } from "./sources/drive";
 import { localConfigured, readLocalTree } from "./sources/local";
 import type { Library } from "./types";
@@ -26,7 +27,7 @@ async function loadLibrary(): Promise<Library> {
     };
   }
   const tree = source === "drive" ? await readDriveTree() : await readLocalTree();
-  return buildLibrary(tree, source);
+  return signLibrary(buildLibrary(tree, source), signId);
 }
 
 /**
@@ -49,11 +50,8 @@ export async function getLibrary(): Promise<Library> {
       models: [],
       source: activeSource(),
       updatedAt: new Date().toISOString(),
-      error: err instanceof Error ? err.message : String(err),
+      // Details go to the server logs (Vercel → Logs), not to visitors.
+      error: "The asset library is temporarily unavailable. Please try again in a few minutes.",
     };
   }
-}
-
-export async function isServable(id: string): Promise<boolean> {
-  return servableIds(await getLibrary()).has(id);
 }

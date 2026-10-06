@@ -52,7 +52,7 @@ export default function AssetCard({
       >
         {videoFrameOnly ? (
           <video
-            src={`${mediaUrl(shown.id)}#t=0.1`}
+            src={`${mediaUrl(shown)}#t=0.1`}
             preload="metadata"
             muted
             playsInline
@@ -64,7 +64,7 @@ export default function AssetCard({
             ref={(el) => {
               if (el?.complete) setLoaded(true);
             }}
-            src={thumbUrl(shown.id, 800)}
+            src={thumbUrl(shown, 800)}
             alt={asset.title}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
@@ -76,7 +76,7 @@ export default function AssetCard({
           <video
             className="card-preview"
             data-playing={playing}
-            src={mediaUrl(asset.cover.id)}
+            src={mediaUrl(asset.cover)}
             autoPlay
             muted
             loop

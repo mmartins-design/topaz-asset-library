@@ -98,8 +98,8 @@ export default function AssetModal({
             <video
               className="stage-media"
               style={{ "--ratio": ratio } as React.CSSProperties}
-              src={mediaUrl(current.id)}
-              poster={asset.poster ? thumbUrl(asset.poster.id, 2000) : undefined}
+              src={mediaUrl(current)}
+              poster={asset.poster ? thumbUrl(asset.poster, 2000) : undefined}
               controls
               autoPlay
               muted
@@ -110,7 +110,7 @@ export default function AssetModal({
             <img
               className="stage-media"
               style={{ "--ratio": ratio } as React.CSSProperties}
-              src={thumbUrl(current.id, 2000)}
+              src={thumbUrl(current, 2000)}
               alt={current.name}
             />
           )}
@@ -134,9 +134,9 @@ export default function AssetModal({
                 title={f.name}
               >
                 {f.kind === "video" && source === "local" ? (
-                  <video src={`${mediaUrl(f.id)}#t=0.1`} preload="metadata" muted />
+                  <video src={`${mediaUrl(f)}#t=0.1`} preload="metadata" muted />
                 ) : (
-                  <img src={thumbUrl(f.id, 400)} alt="" loading="lazy" />
+                  <img src={thumbUrl(f, 400)} alt="" loading="lazy" />
                 )}
                 {f.kind === "video" && <span className="strip-play"><PlayIcon /></span>}
                 {f === asset.before && <span className="strip-tag">Before</span>}
@@ -153,7 +153,7 @@ export default function AssetModal({
               <span className="file-meta">
                 {f.width && f.height ? `${f.width} × ${f.height}` : ""} {formatBytes(f.size)}
               </span>
-              <a href={downloadUrl(f.id, f.name)} download className="file-download" aria-label={`Download ${f.name}`}>
+              <a href={downloadUrl(f, f.name)} download className="file-download" aria-label={`Download ${f.name}`}>
                 <DownloadIcon />
               </a>
             </li>
@@ -162,7 +162,7 @@ export default function AssetModal({
             <li>
               <span className="file-name" title={asset.archive.name}>{asset.archive.name}</span>
               <span className="file-meta">{formatBytes(asset.archive.size)}</span>
-              <a href={downloadUrl(asset.archive.id, asset.archive.name)} download className="file-download" aria-label={`Download ${asset.archive.name}`}>
+              <a href={downloadUrl(asset.archive, asset.archive.name)} download className="file-download" aria-label={`Download ${asset.archive.name}`}>
                 <DownloadIcon />
               </a>
             </li>
