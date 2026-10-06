@@ -40,7 +40,9 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* The Adobe kit has Area at 400 and 700 only; 500 renders as 400 and 600 as 700. */
+  font-family: "area-normal", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
