@@ -35,6 +35,30 @@ const splitList = (s?: string) =>
     .map((t) => t.replace(/-[0-9a-f]{5}$/i, "").replace(/-/g, " ").trim())
     .filter(Boolean);
 
+export function slugify(s: string) {
+  return s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/** Fills in missing slugs and makes them unique; oldest assets keep the plain slug so links stay stable. */
+function assignSlugs(assets: Asset[]) {
+  const used = new Set<string>();
+  const oldestFirst = [...assets].sort((a, b) => a.createdTime.localeCompare(b.createdTime) || a.id.localeCompare(b.id));
+  for (const a of oldestFirst) {
+    const base = a.slug || slugify(a.title) || "asset";
+    let slug = base;
+    for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
+    used.add(slug);
+    a.slug = slug;
+  }
+}
+
 function isoDate(s: string | undefined, fallback: string) {
   const t = s ? Date.parse(s.replace(/\s*\(.*\)$/, "")) : NaN;
   return Number.isNaN(t) ? fallback : new Date(t).toISOString();
@@ -111,6 +135,7 @@ function singleAsset(f: TreeFile, model: string, path: string[], poster?: MediaF
   if (!m) return null;
   return {
     id: f.id,
+    slug: "",
     title: humanize(f.name),
     models: splitModels(model),
     tags: [],
@@ -156,6 +181,7 @@ function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | nu
   const files = [cover, ...content.filter((m) => m !== cover)];
   return {
     id: folder.id,
+    slug: meta?.Slug ? slugify(meta.Slug) : "",
     title,
     models: splitModels(meta?.Model || model),
     tags: [...splitList(meta?.Tags), ...splitList(meta?.Product)],
@@ -207,6 +233,7 @@ function walk(folder: TreeFolder, model: string, path: string[], isModelRoot: bo
       const after = toMedia(derived)!;
       out.push({
         id: derived.id,
+        slug: "",
         title: humanize(f.name),
         models: splitModels(model),
         tags: [],
@@ -249,6 +276,7 @@ export function buildLibrary(root: TreeFolder, source: Library["source"]): Libra
     if (isHidden(modelFolder.name)) continue;
     walk(modelFolder, modelFolder.name, [], true, assets);
   }
+  assignSlugs(assets);
   assets.sort((a, b) => b.createdTime.localeCompare(a.createdTime));
   const models = [...new Set(assets.flatMap((a) => a.models))].sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true }),

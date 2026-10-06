@@ -29,7 +29,8 @@ export default function Gallery({ library }: { library: Library }) {
   const [showVideos, setShowVideos] = useState(true);
   const [model, setModel] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>("newest");
-  const [openId, setOpenId] = useState<string | null>(null);
+  /** Slug of the asset open in the modal (kept in ?asset= so it survives reloads). */
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
   const q = useDeferredValue(query);
 
   // Restore filters from the URL so filtered views can be shared. This runs once after
@@ -42,7 +43,7 @@ export default function Gallery({ library }: { library: Library }) {
     if (p.get("type") === "image") setShowVideos(false);
     if (p.get("type") === "video") setShowImages(false);
     if (SORTS.some((s) => s.value === p.get("sort"))) setSort(p.get("sort") as Sort);
-    if (p.get("asset")) setOpenId(p.get("asset"));
+    if (p.get("asset")) setOpenSlug(p.get("asset"));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [library.models]);
 
@@ -52,10 +53,10 @@ export default function Gallery({ library }: { library: Library }) {
     if (model) p.set("model", model);
     if (showImages !== showVideos) p.set("type", showImages ? "image" : "video");
     if (sort !== "newest") p.set("sort", sort);
-    if (openId) p.set("asset", openId);
+    if (openSlug) p.set("asset", openSlug);
     const s = p.toString();
     window.history.replaceState(null, "", s ? `?${s}` : window.location.pathname);
-  }, [q, model, showImages, showVideos, sort, openId]);
+  }, [q, model, showImages, showVideos, sort, openSlug]);
 
   const terms = useMemo(() => q.toLowerCase().split(/\s+/).filter(Boolean), [q]);
 
@@ -88,15 +89,19 @@ export default function Gallery({ library }: { library: Library }) {
   const videoCount = base.length - imageCount;
   const filterKey = [q, model, showImages, showVideos, sort].join("|");
 
-  const openIndex = openId ? filtered.findIndex((a) => a.id === openId) : -1;
-  const open = openIndex >= 0 ? filtered[openIndex] : library.assets.find((a) => a.id === openId);
-  const step = useCallback(
-    (dir: 1 | -1) => {
-      if (openIndex < 0 || !filtered.length) return;
-      setOpenId(filtered[(openIndex + dir + filtered.length) % filtered.length].id);
-    },
+  const openIndex = openSlug ? filtered.findIndex((a) => a.slug === openSlug) : -1;
+  const open = openIndex >= 0 ? filtered[openIndex] : library.assets.find((a) => a.slug === openSlug);
+  const at = useCallback(
+    (dir: 1 | -1) => filtered[(openIndex + dir + filtered.length) % filtered.length],
     [filtered, openIndex],
   );
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      if (openIndex >= 0 && filtered.length) setOpenSlug(at(dir).slug);
+    },
+    [at, filtered.length, openIndex],
+  );
+  const neighbours = useMemo(() => (openIndex >= 0 ? [at(1), at(-1)] : []), [at, openIndex]);
 
   return (
     <>
@@ -164,7 +169,7 @@ export default function Gallery({ library }: { library: Library }) {
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
           >
             {filtered.length ? (
-              <MasonryGrid assets={filtered} source={library.source} onOpen={setOpenId} />
+              <MasonryGrid assets={filtered} source={library.source} onOpen={setOpenSlug} />
             ) : (
               <div className="empty">
                 <h2>No assets found</h2>
@@ -185,7 +190,8 @@ export default function Gallery({ library }: { library: Library }) {
             key="modal"
             asset={open}
             source={library.source}
-            onClose={() => setOpenId(null)}
+            neighbours={neighbours}
+            onClose={() => setOpenSlug(null)}
             onPrev={openIndex >= 0 ? () => step(-1) : undefined}
             onNext={openIndex >= 0 ? () => step(1) : undefined}
           />

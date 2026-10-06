@@ -7,6 +7,23 @@ export const mediaUrl = (f: Servable) => `/api/media/${encodeURIComponent(f.id)}
 export const thumbUrl = (f: Servable, w = 800) => `/api/thumb/${encodeURIComponent(f.id)}?w=${w}&${q(f)}`;
 export const downloadUrl = (f: Servable, name: string) => `${mediaUrl(f)}&download=${encodeURIComponent(name)}`;
 
+export const assetPath = (a: Asset) => `/asset/${a.slug}`;
+
+/**
+ * Starts downloading the previews the detail view opens with, so it appears
+ * instantly. Called on card hover and for the modal's neighbours.
+ */
+const warmed = new Set<string>();
+export function warmAsset(a: Asset) {
+  if (typeof window === "undefined") return;
+  const files = a.before && a.after ? [a.before, a.after] : [a.cover];
+  for (const f of files) {
+    if (f.kind !== "image" || warmed.has(f.id)) continue;
+    warmed.add(f.id);
+    new Image().src = thumbUrl(f, 800);
+  }
+}
+
 /** The image shown for an asset in the grid. */
 export const displayFile = (a: Asset): MediaFile => a.poster ?? a.cover;
 

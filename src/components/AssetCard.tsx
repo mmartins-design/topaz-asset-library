@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Asset, Library } from "@/lib/types";
-import { aspectOf, displayFile, mediaUrl, primaryDownload, thumbUrl } from "@/lib/urls";
+import { aspectOf, assetPath, displayFile, mediaUrl, primaryDownload, thumbUrl, warmAsset } from "@/lib/urls";
 import { DownloadIcon, PlayIcon } from "./icons";
 
 export default function AssetCard({
@@ -17,7 +17,7 @@ export default function AssetCard({
   source: Library["source"];
   delay: number;
   priority: boolean;
-  onOpen: (id: string) => void;
+  onOpen: (slug: string) => void;
 }) {
   const shown = displayFile(asset);
   const isVideo = asset.kind === "video";
@@ -36,17 +36,25 @@ export default function AssetCard({
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] }}
-      onPointerEnter={(e) => e.pointerType === "mouse" && setHovering(true)}
+      onPointerEnter={(e) => {
+        warmAsset(asset);
+        if (e.pointerType === "mouse") setHovering(true);
+      }}
       onPointerLeave={() => {
         setHovering(false);
         setPlaying(false);
       }}
     >
-      <button
-        type="button"
+      <a
+        href={assetPath(asset)}
         className="card-media"
         style={{ aspectRatio: ratio }}
-        onClick={() => onOpen(asset.id)}
+        onClick={(e) => {
+          // Let cmd/ctrl/shift-click open the asset page in a new tab.
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          e.preventDefault();
+          onOpen(asset.slug);
+        }}
         aria-label={`Open ${asset.title}`}
         data-loaded={loaded}
       >
@@ -84,7 +92,7 @@ export default function AssetCard({
             onPlaying={() => setPlaying(true)}
           />
         )}
-      </button>
+      </a>
 
       <div className="card-badges">
         {isVideo && (

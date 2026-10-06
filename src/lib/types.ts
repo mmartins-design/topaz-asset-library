@@ -19,6 +19,8 @@ export interface MediaFile {
  */
 export interface Asset {
   id: string;
+  /** URL-safe name used for the share page: /asset/<slug>. Unique within the library. */
+  slug: string;
   title: string;
   /** Models used, e.g. ["Dust & Scratch", "Super Focus"] (from Metadata.json or the model folder). */
   models: string[];

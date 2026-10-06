@@ -24,7 +24,8 @@ export default function MasonryGrid({
 }: {
   assets: Asset[];
   source: Library["source"];
-  onOpen: (id: string) => void;
+  /** Called with the asset slug. */
+  onOpen: (slug: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const sentinel = useRef<HTMLDivElement>(null);

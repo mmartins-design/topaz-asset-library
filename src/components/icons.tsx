@@ -25,6 +25,12 @@ export const ChevronRight = (p: P) => (
 export const DownloadIcon = (p: P) => (
   <svg {...base} {...p}><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
 );
+export const ShareIcon = (p: P) => (
+  <svg {...base} {...p}><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14" /></svg>
+);
+export const ArrowLeft = (p: P) => (
+  <svg {...base} {...p}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+);
 export const CheckIcon = (p: P) => (
   <svg {...base} width={16} height={16} {...p}><path d="M20 6 9 17l-5-5" /></svg>
 );

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { MediaFile } from "@/lib/types";
 import { mediaUrl, thumbUrl } from "@/lib/urls";
+import Loader from "./Loader";
+import ProgressiveImg from "./ProgressiveImg";
 
 /** Drag-to-reveal before/after comparison. Works for image pairs and video pairs. */
 export default function CompareSlider({
@@ -18,6 +20,10 @@ export default function CompareSlider({
   poster?: MediaFile;
 }) {
   const [pos, setPos] = useState(50);
+  // The loader stays up until both sides can be shown.
+  const [readyIds, setReadyIds] = useState<string[]>([]);
+  const markReady = (id: string) => setReadyIds((r) => (r.includes(id) ? r : [...r, id]));
+  const ready = readyIds.includes(before.id) && readyIds.includes(after.id);
   const box = useRef<HTMLDivElement>(null);
   const beforeVideo = useRef<HTMLVideoElement>(null);
   const afterVideo = useRef<HTMLVideoElement>(null);
@@ -56,19 +62,23 @@ export default function CompareSlider({
         src={mediaUrl(f)}
         poster={poster ? thumbUrl(poster, 2000) : undefined}
         autoPlay={isAfter}
+        preload="auto"
+        onLoadedData={() => markReady(f.id)}
+        onError={() => markReady(f.id)}
         muted
         loop
         playsInline
         draggable={false}
       />
     ) : (
-      <img src={thumbUrl(f, 2000)} alt={isAfter ? "After" : "Before"} draggable={false} />
+      <ProgressiveImg file={f} alt={isAfter ? "After" : "Before"} onReady={() => markReady(f.id)} />
     );
 
   return (
     <div
       ref={box}
       className="compare"
+      data-ready={ready}
       style={{ "--ratio": ratio } as React.CSSProperties}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -85,6 +95,7 @@ export default function CompareSlider({
       </div>
       <span className="compare-label compare-label-before">Before</span>
       <span className="compare-label compare-label-after">After</span>
+      {!ready && <Loader label="Loading before and after" />}
       <input
         type="range"
         min={0}
