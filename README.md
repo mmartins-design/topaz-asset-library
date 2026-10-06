@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Topaz Asset Library
 
-## Getting Started
+A searchable before/after gallery of Topaz Labs images and videos. Content comes straight from the
+**"Topaz Asset Library"** folder in Google Drive: add a folder or image set to Drive and it appears on the
+site within 5 minutes.
 
-First, run the development server:
+- Masonry grid with infinite scroll and staggered filter animations
+- **Images** / **Video** toggles, a **model** dropdown (one entry per top-level Drive folder), search, and sort
+- Before/after compare slider for image *and* video pairs
+- Light (default) and dark mode
+- Filter state is kept in the URL (`?model=Wonder+2&type=image&q=bird`), so filtered views can be shared
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Built with Next.js 16 (App Router, Cache Components) and deployed on Vercel.
+
+## How Drive folders become assets
+
+```
+Topaz Asset Library/
+  Wonder 2/                        → "Wonder 2" in the model dropdown
+    loose-photo.jpg                → its own asset
+    Photo/                         → grouping folder (shown as "Wonder 2 · Photo")
+      monkey-sitting/              → a folder with media = one image set (one card)
+        before-monkey-sitting.jpg  → "before"
+        after-monkey-sitting.jpg   → "after" (cover image)
+        _thumb.webp                → optional grid thumbnail (name contains "thumb")
+        monkey-sitting.zip         → optional "Download set" package
+        _dam/ or compare/          → optional curated before/after pair
+  SLF2 - GenAI/
+    video 01_veo3.1.mp4            ┐ "<name>" + "<name>_<suffix>" side by side
+    video 01_veo3.1_SLF2.mp4       ┘ become one before/after card
+    video 01 - thumbnail.jpg       → poster for "video 01…"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+How before and after are detected, in order:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. A file name containing `before` / `original`, and one containing `after`.
+2. Otherwise the shortest name that the other files start with is the *before*, and the longest derivative is the *after*
+   (`photo.jpg` → `photo-topaz-v4-focus.jpg`).
+3. Otherwise the higher-resolution file is the *after*.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set titles come from the folder name. When the folder is just a number (`9`, `_7`), the title comes from the
+`.zip` name or the original file's name. A folder with more than 6 media files is treated as a collection,
+and each file becomes its own card.
 
-## Learn More
+## Google Drive setup (one time)
 
-To learn more about Next.js, take a look at the following resources:
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or reuse one) and enable the
+   **Google Drive API**.
+2. **IAM & Admin → Service Accounts → Create service account**. No roles are needed.
+3. Open the service account → **Keys → Add key → JSON**. A `.json` file downloads.
+4. In Google Drive, **share the "Topaz Asset Library" folder** with the service account's email
+   (`…@….iam.gserviceaccount.com`) as **Viewer**.
+5. Copy the folder ID from its URL: `drive.google.com/drive/folders/<FOLDER_ID>`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Name | Required | Description |
+| --- | --- | --- |
+| `GOOGLE_SERVICE_ACCOUNT_KEY` | yes | The service account JSON key, pasted as-is or base64-encoded (`base64 -i key.json`) |
+| `GOOGLE_DRIVE_FOLDER_ID` | recommended | ID of the "Topaz Asset Library" folder. If it's not set, the folder is looked up by name. |
+| `REVALIDATE_SECRET` | optional | Enables `/api/revalidate?secret=…`, which refreshes from Drive immediately |
+| `LOCAL_LIBRARY_PATH` | dev only | Reads a local copy of the library instead of Drive when no Google key is set |
 
-## Deploy on Vercel
+See `.env.example`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Development
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install
+npm run dev
+```
+
+Without Google credentials, set `LOCAL_LIBRARY_PATH` in `.env.local` to a local copy of the library folder.
+
+## Deploying to Vercel
+
+1. Push this repo to GitHub.
+2. On [vercel.com/new](https://vercel.com/new), import the repo. The framework preset is detected automatically.
+3. Add the environment variables above under **Settings → Environment Variables**, then deploy.
+
+The site re-reads Drive every 5 minutes. To refresh immediately after uploading, open
+`https://<your-domain>/api/revalidate?secret=<REVALIDATE_SECRET>`.
+
+## How media is served
+
+Drive files stay private. The service account reads them, and the site serves them through its own routes:
+
+- `/api/thumb/:id?w=800`: resized preview generated by Google (images and video stills), cached by Vercel's CDN
+- `/api/media/:id`: the full file, with Range support for video seeking. Add `?download=<name>` to download it.
+
+Both routes only serve files that are part of the library.
