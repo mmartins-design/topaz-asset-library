@@ -19,7 +19,7 @@ const SORTS: { value: Sort; label: string }[] = [
 
 function matches(a: Asset, terms: string[]) {
   if (!terms.length) return true;
-  const hay = [a.title, a.model, ...a.path, a.cover.name].join(" ").toLowerCase();
+  const hay = [a.title, ...a.models, ...a.tags, ...a.path].join(" ").toLowerCase();
   return terms.every((t) => hay.includes(t));
 }
 
@@ -61,7 +61,7 @@ export default function Gallery({ library }: { library: Library }) {
 
   // Matches for everything except the media-type toggles (used for toggle counts).
   const base = useMemo(
-    () => library.assets.filter((a) => (!model || a.model === model) && matches(a, terms)),
+    () => library.assets.filter((a) => (!model || a.models.includes(model)) && matches(a, terms)),
     [library.assets, model, terms],
   );
 
@@ -74,12 +74,14 @@ export default function Gallery({ library }: { library: Library }) {
 
   const modelCounts = useMemo(() => {
     const counts: Record<string, number> = {};
+    let total = 0;
     for (const a of library.assets) {
       if ((a.kind === "image" ? showImages : showVideos) && matches(a, terms)) {
-        counts[a.model] = (counts[a.model] ?? 0) + 1;
+        for (const m of a.models) counts[m] = (counts[m] ?? 0) + 1;
+        total++;
       }
     }
-    return counts;
+    return { counts, total };
   }, [library.assets, showImages, showVideos, terms]);
 
   const imageCount = base.filter((a) => a.kind === "image").length;
@@ -111,7 +113,13 @@ export default function Gallery({ library }: { library: Library }) {
           <Switch checked={showVideos} onChange={setShowVideos} icon={<VideoIcon />} label="Video" count={videoCount} />
         </div>
         <div className="toolbar-group">
-          <ModelSelect models={library.models} counts={modelCounts} value={model} onChange={setModel} />
+          <ModelSelect
+            models={library.models}
+            counts={modelCounts.counts}
+            total={modelCounts.total}
+            value={model}
+            onChange={setModel}
+          />
           <label className="select">
             <span className="sr-only">Sort by</span>
             <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>

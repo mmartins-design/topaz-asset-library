@@ -5,7 +5,8 @@ import type { Asset, Library, MediaFile, MediaKind, TreeFile, TreeFolder } from 
  *
  * Folder conventions (matches the existing "Topaz Asset Library" layout):
  *   Topaz Asset Library/
- *     <Model>/                      → one entry in the model dropdown
+ *     Images/ and Videos/           → optional media-type grouping (not a model)
+ *     <Model>/                      → one entry in the model dropdown; "A, B" means both A and B
  *       loose-file.jpg              → its own asset
  *       <any sub-folders>/          → grouping only (shown as a breadcrumb)
  *         <set folder>/             → a folder holding media files is one "image set"
@@ -14,6 +15,7 @@ import type { Asset, Library, MediaFile, MediaKind, TreeFile, TreeFolder } from 
  *           _thumb.webp             → optional grid thumbnail (name contains "thumb")
  *           download.zip            → optional download package
  *           _dam/ or compare/       → optional curated before/after pair
+ *           Metadata.json           → optional Webflow record: Name, Model, Tags, Created On
  *
  * A folder with more than COLLECTION_THRESHOLD media files is treated as a
  * collection: each file becomes its own asset.
@@ -24,6 +26,19 @@ const CURATED_FOLDER = /^(_dam|compare)$/i;
 const THUMB = /thumb/i;
 const BEFORE = /(^|[^a-z])(before|original)([^a-z]|$)/i;
 const AFTER = /(^|[^a-z])after([^a-z]|$)/i;
+const TYPE_FOLDER = /^(images?|photos?|videos?)$/i;
+
+const splitModels = (s: string) => s.split(/\s*,\s*/).map((m) => m.trim()).filter(Boolean);
+const splitList = (s?: string) =>
+  (s ?? "")
+    .split(/\s*;\s*/)
+    .map((t) => t.replace(/-[0-9a-f]{5}$/i, "").replace(/-/g, " ").trim())
+    .filter(Boolean);
+
+function isoDate(s: string | undefined, fallback: string) {
+  const t = s ? Date.parse(s.replace(/\s*\(.*\)$/, "")) : NaN;
+  return Number.isNaN(t) ? fallback : new Date(t).toISOString();
+}
 
 export function mediaKind(mimeType: string): MediaKind | null {
   if (mimeType.startsWith("image/")) return "image";
@@ -46,7 +61,8 @@ export function humanize(name: string): string {
   const s = stem(name)
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "")
     .replace(/(^|[_\s-])[0-9a-f]{16,}(?=[_\s-]|$)/gi, "$1")
-    .replace(/^[_\s-]*\d+[_\s-]+(?=[a-z])/i, "")
+    .replace(/\s*\[[0-9a-f]{6,}\]$/i, "")
+    .replace(/^[_\s-]*\d+[_-]+(?=[a-z])/i, "")
     .replace(/^[_\s-]+/, "")
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
@@ -96,7 +112,8 @@ function singleAsset(f: TreeFile, model: string, path: string[], poster?: MediaF
   return {
     id: f.id,
     title: humanize(f.name),
-    model,
+    models: splitModels(model),
+    tags: [],
     path,
     kind: m.kind,
     cover: m,
@@ -107,6 +124,9 @@ function singleAsset(f: TreeFile, model: string, path: string[], poster?: MediaF
 }
 
 function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | null {
+  const meta = folder.metadata;
+  if (meta?.Archived === "true" || meta?.Draft === "true") return null;
+
   const own = folder.files.map(toMedia).filter((m): m is MediaFile => !!m);
   const curatedFolder = folder.folders.find((f) => CURATED_FOLDER.test(f.name));
   const curated = (curatedFolder?.files ?? []).map(toMedia).filter((m): m is MediaFile => !!m);
@@ -128,7 +148,8 @@ function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | nu
 
   const archiveFile = folder.files.find(isArchive);
   const title =
-    !isGenericName(folder.name) ? humanize(folder.name)
+    meta?.Name?.trim() ? meta.Name.trim()
+    : !isGenericName(folder.name) ? humanize(folder.name)
     : archiveFile && !isGenericName(stem(archiveFile.name)) ? humanize(archiveFile.name)
     : humanize((before ?? cover).name);
 
@@ -136,7 +157,8 @@ function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | nu
   return {
     id: folder.id,
     title,
-    model,
+    models: splitModels(meta?.Model || model),
+    tags: [...splitList(meta?.Tags), ...splitList(meta?.Product)],
     path,
     kind,
     cover,
@@ -145,7 +167,7 @@ function setAsset(folder: TreeFolder, model: string, path: string[]): Asset | nu
     after,
     files,
     archive: archiveFile ? { id: archiveFile.id, name: archiveFile.name, size: archiveFile.size } : undefined,
-    createdTime: folder.createdTime,
+    createdTime: isoDate(meta?.["Created On"], folder.createdTime),
   };
 }
 
@@ -186,7 +208,8 @@ function walk(folder: TreeFolder, model: string, path: string[], isModelRoot: bo
       out.push({
         id: derived.id,
         title: humanize(f.name),
-        model,
+        models: splitModels(model),
+        tags: [],
         path: subPath,
         kind: after.kind,
         cover: after,
@@ -221,12 +244,13 @@ function walk(folder: TreeFolder, model: string, path: string[], isModelRoot: bo
 
 export function buildLibrary(root: TreeFolder, source: Library["source"]): Library {
   const assets: Asset[] = [];
-  for (const modelFolder of root.folders) {
+  const modelFolders = root.folders.flatMap((f) => (TYPE_FOLDER.test(f.name) ? f.folders : [f]));
+  for (const modelFolder of modelFolders) {
     if (isHidden(modelFolder.name)) continue;
     walk(modelFolder, modelFolder.name, [], true, assets);
   }
   assets.sort((a, b) => b.createdTime.localeCompare(a.createdTime));
-  const models = [...new Set(assets.map((a) => a.model))].sort((a, b) =>
+  const models = [...new Set(assets.flatMap((a) => a.models))].sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true }),
   );
   return { assets, models, source, updatedAt: new Date().toISOString() };

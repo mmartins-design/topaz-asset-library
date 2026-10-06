@@ -127,7 +127,29 @@ export async function readDriveTree(): Promise<TreeFolder> {
       }
     }
   }
+  await loadMetadata([...byId.values()]);
   return root;
+}
+
+const METADATA = /^metadata\.json$/i;
+
+/** Downloads every folder's Metadata.json (a few at a time) and attaches it to the folder. */
+async function loadMetadata(folders: TreeFolder[]) {
+  const queue = folders.flatMap((folder) => {
+    const file = folder.files.find((f) => METADATA.test(f.name));
+    return file ? [{ folder, file }] : [];
+  });
+  const worker = async () => {
+    for (let job = queue.shift(); job; job = queue.shift()) {
+      try {
+        const res = await fetchDriveMedia(job.file.id, null);
+        if (res.ok) job.folder.metadata = await res.json();
+      } catch (err) {
+        console.warn(`Skipping unreadable ${job.folder.name}/${job.file.name}`, err);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: 8 }, worker));
 }
 
 /** Streams a file's bytes from Drive, forwarding Range so video seeking works. */

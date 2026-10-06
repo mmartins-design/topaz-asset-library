@@ -16,20 +16,29 @@ Built with Next.js 16 (App Router, Cache Components) and deployed on Vercel.
 
 ```
 Topaz Asset Library/
-  Wonder 2/                        → "Wonder 2" in the model dropdown
-    loose-photo.jpg                → its own asset
-    Photo/                         → grouping folder (shown as "Wonder 2 · Photo")
-      monkey-sitting/              → a folder with media = one image set (one card)
-        before-monkey-sitting.jpg  → "before"
-        after-monkey-sitting.jpg   → "after" (cover image)
-        _thumb.webp                → optional grid thumbnail (name contains "thumb")
-        monkey-sitting.zip         → optional "Download set" package
-        _dam/ or compare/          → optional curated before/after pair
-  SLF2 - GenAI/
-    video 01_veo3.1.mp4            ┐ "<name>" + "<name>_<suffix>" side by side
-    video 01_veo3.1_SLF2.mp4       ┘ become one before/after card
-    video 01 - thumbnail.jpg       → poster for "video 01…"
+  Images/                                → media-type grouping (Images / Videos), not a model
+    Wonder 2/                            → "Wonder 2" in the model dropdown
+      Giraffe with blue sky/             → one card (an "image set")
+        Before.jpeg                      → before
+        After.jpeg                       → after (shown in the compare slider)
+        Thumbnail.webp                   → grid image (any name containing "thumb")
+        Original download.zip            → "Download set" button
+        Metadata.json                    → optional Webflow record (see below)
+    Dust & Scratch, Super Focus/         → "A, B" lists the asset under both models
+  Videos/
+    Starlight Fast 2/
+      Modern home aerial/
+        Before.mp4
+        After.mp4
 ```
+
+When a set has a `Metadata.json` (the Webflow CMS export), it's used for:
+- `Name`: the card title
+- `Model`: the models (comma-separated)
+- `Tags` and `Product`: search keywords
+- `Created On`: the Newest/Oldest sort
+
+Records marked `"Archived": "true"` or `"Draft": "true"` are hidden. Without the metadata, the folder names are used instead.
 
 How before and after are detected, in order:
 

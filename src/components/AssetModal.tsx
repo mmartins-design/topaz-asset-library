@@ -84,7 +84,7 @@ export default function AssetModal({
         <header className="modal-header">
           <div>
             <h2>{asset.title}</h2>
-            <p className="modal-sub">{[asset.model, ...asset.path].join(" · ")}</p>
+            <p className="modal-sub">{[asset.models.join(", "), ...asset.path].join(" · ")}</p>
           </div>
           <a className="button button-primary" href={main.href} download>
             <DownloadIcon /> {main.label}

@@ -105,7 +105,7 @@ export default function AssetCard({
 
       <div className="card-info">
         <span className="card-title">{asset.title}</span>
-        <span className="card-model">{[asset.model, ...asset.path].join(" · ")}</span>
+        <span className="card-model">{[asset.models.join(", "), ...asset.path].join(" · ")}</span>
       </div>
     </motion.article>
   );

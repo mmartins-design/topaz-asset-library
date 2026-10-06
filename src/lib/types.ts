@@ -20,8 +20,10 @@ export interface MediaFile {
 export interface Asset {
   id: string;
   title: string;
-  /** Top-level folder in the library, e.g. "Wonder 2". */
-  model: string;
+  /** Models used, e.g. ["Dust & Scratch", "Super Focus"] (from Metadata.json or the model folder). */
+  models: string[];
+  /** Search keywords from Metadata.json "Tags" and "Product". */
+  tags: string[];
   /** Sub-folders between the model folder and the asset, e.g. ["GenAI"]. */
   path: string[];
   kind: MediaKind;
@@ -63,4 +65,6 @@ export interface TreeFolder {
   createdTime: string;
   files: TreeFile[];
   folders: TreeFolder[];
+  /** Parsed Metadata.json from this folder (Webflow CMS export), if present. */
+  metadata?: Record<string, string>;
 }

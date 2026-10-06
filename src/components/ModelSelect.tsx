@@ -8,11 +8,14 @@ import { CheckIcon, ChevronDown } from "./icons";
 export default function ModelSelect({
   models,
   counts,
+  total,
   value,
   onChange,
 }: {
   models: string[];
   counts: Record<string, number>;
+  /** Assets across all models (an asset can belong to several, so this isn't the sum of counts). */
+  total: number;
   value: string | null;
   onChange: (m: string | null) => void;
 }) {
@@ -33,7 +36,6 @@ export default function ModelSelect({
     };
   }, [open]);
 
-  const total = Object.values(counts).reduce((s, n) => s + n, 0);
   const options: { value: string | null; label: string; count: number }[] = [
     { value: null, label: "All models", count: total },
     ...models.map((m) => ({ value: m, label: m, count: counts[m] ?? 0 })),

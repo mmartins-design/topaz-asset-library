@@ -58,6 +58,12 @@ async function readFolder(dir: string): Promise<TreeFolder> {
       folder.folders.push(await readFolder(full));
       continue;
     }
+    if (/^metadata\.json$/i.test(entry.name)) {
+      try {
+        folder.metadata = JSON.parse(await fs.promises.readFile(full, "utf8"));
+      } catch {}
+      continue;
+    }
     const mimeType = localMime(full);
     if (mimeType === "application/octet-stream") continue;
     const s = await fs.promises.stat(full);
