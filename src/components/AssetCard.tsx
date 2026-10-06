@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Asset, Library } from "@/lib/types";
 import { aspectOf, assetPath, displayFile, mediaUrl, primaryDownload, thumbUrl, warmAsset } from "@/lib/urls";
-import { DownloadIcon, PlayIcon } from "./icons";
+import { DownloadIcon, ImageIcon, VideoIcon } from "./icons";
 
 export default function AssetCard({
   asset,
@@ -94,12 +94,9 @@ export default function AssetCard({
         )}
       </a>
 
-      <div className="card-badges">
-        {isVideo && (
-          <span className="badge"><PlayIcon /> Video</span>
-        )}
-        {asset.before && asset.after && <span className="badge">Before / After</span>}
-      </div>
+      <span className="card-kind" role="img" aria-label={isVideo ? "Video" : "Image"} title={isVideo ? "Video" : "Image"}>
+        {isVideo ? <VideoIcon width={12} height={12} /> : <ImageIcon width={12} height={12} />}
+      </span>
 
       <a
         className="card-download"
