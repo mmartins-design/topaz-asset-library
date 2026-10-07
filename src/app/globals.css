@@ -471,7 +471,12 @@ a { color: inherit; }
   object-fit: contain;
 }
 
-.compare { position: relative; user-select: none; touch-action: pan-y; cursor: ew-resize; }
+.compare { position: relative; overflow: hidden; user-select: none; touch-action: pan-y; cursor: ew-resize; outline: none; }
+.compare:focus-visible { box-shadow: inset 0 0 0 2px var(--fg); }
+/* Zoomed: drag pans, and the browser must not scroll/zoom the page on touch. */
+.compare[data-zoomed="true"] { cursor: grab; touch-action: none; }
+.compare[data-zoomed="true"]:active { cursor: grabbing; }
+.compare-zoom { position: absolute; inset: 0; transform-origin: 0 0; }
 .compare img, .compare video, .compare .progressive { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 /* Preview first, sharp version fades in on top. */
@@ -479,6 +484,8 @@ a { color: inherit; }
 .progressive img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .progressive .progressive-sharp { opacity: 0; transition: opacity 0.35s ease; }
 .progressive[data-sharp="true"] .progressive-sharp { opacity: 1; }
+.progressive .progressive-full { opacity: 0; transition: opacity 0.35s ease; }
+.progressive[data-full="true"] .progressive-full { opacity: 1; }
 .stage-frame { position: relative; }
 .stage-frame .progressive img { object-fit: contain; }
 
@@ -532,6 +539,44 @@ a { color: inherit; }
 }
 .compare-label-before { left: 12px; }
 .compare-label-after { right: 12px; }
+/* The knob stays grabbable while zoomed (the rest of the image pans). */
+.compare-knob { pointer-events: auto; cursor: ew-resize; }
+
+.compare-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  cursor: default;
+}
+.compare-controls button {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.compare-controls button:hover:not(:disabled) { background: rgb(255 255 255 / 0.16); }
+.compare-controls button:disabled { opacity: 0.35; cursor: default; }
+.compare-zoom-level { min-width: 46px !important; }
+.compare[data-ready="false"] .compare-controls { opacity: 0; pointer-events: none; }
+
 .compare-range { position: absolute; inset: auto 0 0 0; width: 100%; opacity: 0; pointer-events: none; }
 .compare-range:focus-visible { opacity: 1; }
 

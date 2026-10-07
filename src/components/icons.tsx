@@ -31,6 +31,15 @@ export const ShareIcon = (p: P) => (
 export const ArrowLeft = (p: P) => (
   <svg {...base} {...p}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
 );
+export const PlusIcon = (p: P) => (
+  <svg {...base} width={16} height={16} {...p}><path d="M12 5v14M5 12h14" /></svg>
+);
+export const MinusIcon = (p: P) => (
+  <svg {...base} width={16} height={16} {...p}><path d="M5 12h14" /></svg>
+);
+export const FitIcon = (p: P) => (
+  <svg {...base} width={16} height={16} {...p}><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+);
 export const CheckIcon = (p: P) => (
   <svg {...base} width={16} height={16} {...p}><path d="M20 6 9 17l-5-5" /></svg>
 );
