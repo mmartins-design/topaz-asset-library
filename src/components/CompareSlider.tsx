@@ -91,21 +91,35 @@ export default function CompareSlider({
     setPos(Math.max(0, Math.min(100, (x / w) * 100)));
   };
 
-  // Trackpad pinch arrives as wheel + ctrlKey; ⌘/Ctrl + mouse wheel zooms too.
-  // A plain wheel pans while zoomed and scrolls the page otherwise.
+  // Scroll wheel zooms toward the cursor (up = in, down = out). At 100%, scrolling
+  // down is left to the page so the image never traps page scrolling.
+  // Trackpad pinch arrives as wheel + ctrlKey and zooms the same way; sideways
+  // trackpad swipes pan while zoomed.
   // Registered by hand because React's wheel listener can't preventDefault.
   useEffect(() => {
     const el = box.current!;
     const onWheel = (e: WheelEvent) => {
       const v = viewRef.current;
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const { x, y } = local(e.clientX, e.clientY);
-        zoomAt(v.scale * Math.exp(-e.deltaY * 0.01), x, y);
-      } else if (v.scale > 1.001) {
-        e.preventDefault();
-        setView((cur) => clamp({ ...cur, x: cur.x - e.deltaX, y: cur.y - e.deltaY }));
+      // Normalise line/page deltas (Firefox sends ~3 lines per notch) so one notch ≈ 100px everywhere.
+      const unit = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? el.clientHeight : 1;
+      const dx = e.deltaX * unit;
+      const dy = e.deltaY * unit;
+      const pinch = e.ctrlKey || e.metaKey;
+
+      if (!pinch && Math.abs(dx) > Math.abs(dy)) {
+        if (v.scale > 1.001) {
+          e.preventDefault();
+          setView((cur) => clamp({ ...cur, x: cur.x - dx }));
+        }
+        return;
       }
+      if (!pinch && dy > 0 && v.scale <= MIN_ZOOM + 0.001) return; // let the page scroll
+
+      e.preventDefault();
+      const { x, y } = local(e.clientX, e.clientY);
+      // Pinch deltas are small and frequent; wheel notches are ~100px.
+      const speed = pinch ? 0.01 : 0.0025;
+      zoomAt(v.scale * Math.exp(-dy * speed), x, y);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -248,7 +262,7 @@ export default function CompareSlider({
       data-ready={ready}
       data-zoomed={zoomed}
       tabIndex={0}
-      aria-label="Before and after comparison. Use + and − to zoom, 0 to reset."
+      aria-label="Before and after comparison. Scroll or use + and − to zoom, 0 to reset."
       style={{ "--ratio": ratio } as React.CSSProperties}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
